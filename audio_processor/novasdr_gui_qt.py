@@ -23,8 +23,15 @@ from PyQt5.QtGui import QFont, QPalette, QColor
 try:
     import novasdr_nr as novasdr_nr_py
     NOVASDR_AVAILABLE = True
-except ImportError:
+    print(f"✓ NovaSDR module loaded from: {novasdr_nr_py.__file__}")
+except ImportError as e:
     NOVASDR_AVAILABLE = False
+    print(f"✗ NovaSDR module not available: {e}")
+except Exception as e:
+    NOVASDR_AVAILABLE = False
+    print(f"✗ Error loading NovaSDR module: {e}")
+    import traceback
+    traceback.print_exc()
 
 try:
     from pydub import AudioSegment
@@ -97,18 +104,22 @@ class AudioProcessor(QThread):
         
         audio_data = indata[:, 0].copy()
         
-        if self.bypass or not NOVASDR_AVAILABLE:
+        if self.bypass or not NOVASDR_AVAILABLE or self.novasdr_nr is None:
             filtered_audio = audio_data
         else:
-            if self.bandpass_filter is not None:
-                filtered_audio, self.zi_bandpass = signal.sosfilt(
-                    self.bandpass_filter, audio_data, zi=self.zi_bandpass
-                )
-            else:
+            try:
+                if self.bandpass_filter is not None:
+                    filtered_audio, self.zi_bandpass = signal.sosfilt(
+                        self.bandpass_filter, audio_data, zi=self.zi_bandpass
+                    )
+                else:
+                    filtered_audio = audio_data
+                
+                filtered_audio = self.novasdr_nr.process(filtered_audio.astype(np.float32))
+                filtered_audio = filtered_audio * self.post_gain
+            except Exception as e:
+                print(f"✗ Audio processing error: {e}")
                 filtered_audio = audio_data
-            
-            filtered_audio = self.novasdr_nr.process(filtered_audio.astype(np.float32))
-            filtered_audio = filtered_audio * self.post_gain
         
         filtered_audio = np.clip(filtered_audio, -0.95, 0.95)
         
@@ -128,15 +139,24 @@ class AudioProcessor(QThread):
         self.bandpass_filter, self.zi_bandpass = self.create_bandpass_filter(mode)
         
         if NOVASDR_AVAILABLE:
-            presets = PRESETS_CW if mode == 'CW' else PRESETS_SSB
-            preset_config = presets[preset]
-            self.novasdr_nr = novasdr_nr_py.SpectralNoiseReduction(
-                SAMPLE_RATE,
-                preset_config['gain'],
-                preset_config['alpha'],
-                preset_config['asnr']
-            )
-            self.post_gain = preset_config['post_gain']
+            try:
+                presets = PRESETS_CW if mode == 'CW' else PRESETS_SSB
+                preset_config = presets[preset]
+                self.novasdr_nr = novasdr_nr_py.SpectralNoiseReduction(
+                    SAMPLE_RATE,
+                    preset_config['gain'],
+                    preset_config['alpha'],
+                    preset_config['asnr']
+                )
+                self.post_gain = preset_config['post_gain']
+                print(f"✓ NovaSDR filter initialized: {preset} mode {mode}")
+            except Exception as e:
+                print(f"✗ Failed to initialize NovaSDR: {e}")
+                import traceback
+                traceback.print_exc()
+                self.log_signal.emit(f"ERROR: Failed to initialize NovaSDR: {e}")
+        else:
+            self.log_signal.emit("WARNING: NovaSDR module not available - running in bypass mode")
         
         self.stream = sd.Stream(
             device=(input_dev, output_dev),
