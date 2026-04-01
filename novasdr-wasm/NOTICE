@@ -1,0 +1,8 @@
+﻿NovaSDR WASM DSP library.
+
+This repository contains derived work from:
+- https://github.com/PhantomSDR/decoders (Apache-2.0)
+
+See LICENSE-APACHE and LICENSE-MIT for upstream template/original licensing files.
+
+This repository as a whole is distributed under GPL-3.0-only; Apache-2.0 notice requirements are preserved.
