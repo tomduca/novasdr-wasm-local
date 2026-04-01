@@ -143,12 +143,21 @@ nr_filter/
 4. **Less is more:** Removing unnecessary filters improves quality
 5. **Post-gain** is crucial for aggressive filters
 
+## Completed Features
+
+- [x] Add real-time controls (adjust parameters without restarting)
+- [x] Simple GUI for device selection and presets (Web interface)
+- [x] Bypass toggle for pass-through mode
+- [x] Real-time preset switching
+- [x] Audio recording with automatic timestamping (MP3/WAV)
+
 ## Possible Next Steps (Future)
 
-- [ ] Add real-time controls (adjust parameters without restarting)
-- [ ] Simple GUI for device selection and presets
 - [ ] Support for other novasdr filters (Noise Blanker, Auto Notch)
+- [x] Support for CW mode
 - [ ] Export as standalone macOS application
+- [ ] Native GUI application (without browser)
+- [ ] Windows version
 
 ## Conclusion
 

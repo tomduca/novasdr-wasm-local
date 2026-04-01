@@ -127,6 +127,42 @@ Headphones / Speakers
 - **CPU:** Very low (Rust optimized)
 - **Quality:** Equal to original NovaSDR web
 
+## Recording Audio
+
+The web interface includes audio recording functionality to save processed audio.
+
+### How to Record
+
+1. **Start audio processing** (click ▶ Start button)
+2. **Click "🔴 Start Recording"** when ready
+3. **Listen and record** your desired content
+4. **Click "⏹️ Stop Recording"** when done
+
+### Recording Details
+
+- **Format:** MP3 (128kbps) or WAV (fallback)
+- **Filename:** `recording_YYYYMMDD_HHMMSS.mp3`
+- **Location:** `audio_processor/recordings/`
+- **Audio:** Processed output (with NovaSDR filter applied)
+
+### Requirements for MP3
+
+MP3 recording requires `ffmpeg`:
+
+```bash
+brew install ffmpeg
+```
+
+If `ffmpeg` is not installed, recordings will automatically save as WAV format.
+
+### Example Filenames
+
+```
+recording_20260331_233045.mp3
+recording_20260331_234120.mp3
+recording_20260401_081530.mp3
+```
+
 ## Troubleshooting
 
 ### No audio output

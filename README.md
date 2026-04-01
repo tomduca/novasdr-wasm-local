@@ -8,11 +8,28 @@ Hybrid **Python + Rust** pipeline integrating NovaSDR Spectral Noise Reduction f
 - **Latency:** ~43ms (ultra low)
 - **Volume:** Optimal with automatic compensation
 - **Quality:** Excellent, no artifacts
+- **Recording:** Save processed audio as MP3 or WAV
 
 ## 🚀 Quick Start
 
 **First time setup:** See **[INSTALL.md](INSTALL.md)** for installation instructions.
 
+### Native GUI (PyQt5 - Recommended)
+```bash
+cd audio_processor
+./run_qt_gui.sh
+```
+
+### Web GUI (Browser-based)
+```bash
+cd audio_processor
+./run_web.sh
+# Open http://localhost:5001
+```
+
+See **[GUI_OPTIONS.md](GUI_OPTIONS.md)** for detailed comparison and instructions.
+
+### Command Line Version
 ```bash
 cd audio_processor
 ./run_ultra.sh
@@ -32,7 +49,17 @@ WebSDR → Multi-Output Device → BlackHole 2ch
     Jabra / Speakers
 ```
 
-## Available Presets
+## Features
+
+### Graphical Interface
+- ✅ Device selection (input/output)
+- ✅ Preset selection (Moderate, Aggressive, Ultra, Extreme)
+- ✅ Bypass toggle (pass-through mode)
+- ✅ Real-time log output
+- ✅ Start/Stop control
+- ✅ Audio recording (MP3/WAV with timestamp)
+
+### Command Line Presets
 
 - **`./run_ultra.sh`** ⭐ - Maximum reduction (RECOMMENDED)
 - **`./run_aggressive.sh`** - Strong reduction
@@ -69,8 +96,19 @@ Look for:
 
 Note the numeric indices and configure in the scripts.
 
+## 📦 Standalone Applications
+
+Build standalone desktop applications (no Python required):
+
+- **macOS:** `cd audio_processor && ./build_macos.sh` → Creates `.app` bundle
+- **Windows:** `cd audio_processor && build_windows.bat` → Creates `.exe` file
+
+See **[STANDALONE_APP_GUIDE.md](STANDALONE_APP_GUIDE.md)** for complete instructions.
+
 ## Documentation
 
+- **`GUI_OPTIONS.md`** - Compare Native vs Web GUI options
+- **`STANDALONE_APP_GUIDE.md`** - Build standalone apps for macOS/Windows
 - **`audio_processor/USAGE.md`** - Complete usage guide
 - **`SOLUTION_SUMMARY.md`** - Technical project summary
 
