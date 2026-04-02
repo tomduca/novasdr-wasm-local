@@ -19,7 +19,8 @@ rm -rf build dist *.spec
 # Build the application
 pyinstaller --name="NovaSDR Audio Processor" \
     --windowed \
-    --onefile \
+    --onedir \
+    --osx-bundle-identifier=com.lu2met.novasdr \
     --add-data="recordings:recordings" \
     --add-binary="$NOVASDR_MODULE/novasdr_nr*.so:." \
     --hidden-import=numpy \
@@ -42,9 +43,17 @@ pyinstaller --name="NovaSDR Audio Processor" \
     novasdr_gui_qt.py
 
 echo ""
+echo "Adding Info.plist with microphone permissions..."
+cp Info.plist "dist/NovaSDR Audio Processor.app/Contents/Info.plist"
+
+echo "Re-signing application..."
+codesign --force --deep --sign - "dist/NovaSDR Audio Processor.app"
+
+echo ""
 echo "✓ Build complete!"
 echo "Application: dist/NovaSDR Audio Processor.app"
 echo ""
 echo "To run: open 'dist/NovaSDR Audio Processor.app'"
 echo ""
 echo "Note: The app includes all dependencies and the NovaSDR Rust module."
+echo "Note: First launch will request microphone permissions - click Allow."

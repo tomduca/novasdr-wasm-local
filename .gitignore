@@ -1,35 +1,42 @@
 # Rust
-/target
-/Cargo.lock
-novasdr_nr_py/target/
-
 # Python
 venv/
-audio_processor/venv/
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# PyInstaller
+*.spec
+
+# Rust
+target/
+Cargo.lock
 
 # IDE
-*.swp
-*.swo
-*~
 .vscode/
 .idea/
 
-# macOS
+# OS
 .DS_Store
+*.swp
+*.swo
 
 # Logs
 *.log
+novasdr_debug.log
 
-# Compiled Python extensions
-*.pyd
-*.dll
+# Audio recordings (keep folder, ignore files)
+audio_processor/recordings/*.wav
+audio_processor/recordings/*.mp3
+!audio_processor/recordings/.gitkeep
 
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
+# Temporary test files
+test_*.py
+simple_*.py

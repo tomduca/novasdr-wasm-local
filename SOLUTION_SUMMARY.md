@@ -155,13 +155,15 @@ nr_filter/
 
 - [ ] Support for other novasdr filters (Noise Blanker, Auto Notch)
 - [x] Support for CW mode
-- [ ] Export as standalone macOS application
-- [ ] Native GUI application (without browser)
-- [ ] Windows version
+- [x] Export as standalone macOS application (PyQt5 + PyInstaller)
+- [x] Native GUI application (PyQt5, no browser required)
+- [ ] Windows version (build script ready, needs testing on Windows)
 
 ## Conclusion
 
 **Project completed successfully.** The Rust NovaSDR filter is working locally with quality comparable to the original web version, ultra-low latency, and optimal volume.
+
+**Standalone macOS application:** Fully functional .app bundle with PyQt5 GUI, includes all dependencies, NovaSDR Rust module, and proper macOS permissions for audio devices.
 
 **Command to use:**
 ```bash

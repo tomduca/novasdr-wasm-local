@@ -107,10 +107,16 @@ See **[STANDALONE_APP_GUIDE.md](STANDALONE_APP_GUIDE.md)** for complete instruct
 
 ## Documentation
 
+### Build & Distribution
+- **`BUILD.md`** - **Complete build guide for macOS and Windows**
 - **`GUI_OPTIONS.md`** - Compare Native vs Web GUI options
-- **`STANDALONE_APP_GUIDE.md`** - Build standalone apps for macOS/Windows
+- **`WINDOWS_BUILD.md`** - Windows-specific build details
+- **`STANDALONE_APP_GUIDE.md`** - Distribution and packaging guide
+
+### Usage & Technical
 - **`audio_processor/USAGE.md`** - Complete usage guide
 - **`SOLUTION_SUMMARY.md`** - Technical project summary
+- **`INSTALL.md`** - Development environment setup
 
 ## Components
 

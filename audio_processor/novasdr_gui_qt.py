@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 import wave
+import logging
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
@@ -20,15 +21,30 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
+# Setup logging to file for debugging when run from Finder
+log_file = Path.home() / 'novasdr_debug.log'
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logging.info(f"NovaSDR Audio Processor starting... Log file: {log_file}")
+
 try:
     import novasdr_nr as novasdr_nr_py
     NOVASDR_AVAILABLE = True
+    logging.info(f"✓ NovaSDR module loaded from: {novasdr_nr_py.__file__}")
     print(f"✓ NovaSDR module loaded from: {novasdr_nr_py.__file__}")
 except ImportError as e:
     NOVASDR_AVAILABLE = False
+    logging.error(f"✗ NovaSDR module not available: {e}")
     print(f"✗ NovaSDR module not available: {e}")
 except Exception as e:
     NOVASDR_AVAILABLE = False
+    logging.error(f"✗ Error loading NovaSDR module: {e}", exc_info=True)
     print(f"✗ Error loading NovaSDR module: {e}")
     import traceback
     traceback.print_exc()
@@ -83,6 +99,7 @@ class AudioProcessor(QThread):
         self.bandpass_filter = None
         self.zi_bandpass = None
         self.recording_data = []
+        self.callback_count = 0
         
     def create_bandpass_filter(self, mode):
         config = BANDPASS_CONFIG[mode]
@@ -99,13 +116,31 @@ class AudioProcessor(QThread):
         return sos, zi
     
     def audio_callback(self, indata, outdata, frames, time_info, status):
+        self.callback_count += 1
+        
+        # Log every 100 callbacks to verify it's running
+        if self.callback_count % 100 == 0:
+            logging.debug(f"Audio callback running: {self.callback_count} calls")
+        
         if status:
+            logging.warning(f"Audio status: {status}")
             print(f"Audio status: {status}", file=sys.stderr)
         
-        audio_data = indata[:, 0].copy()
+        # Handle any number of input channels - extract mono
+        if indata.ndim == 1:
+            # Already mono
+            audio_data = indata.copy()
+        elif indata.shape[1] == 1:
+            # Single channel in 2D array
+            audio_data = indata[:, 0].copy()
+        else:
+            # Multiple channels - mix to mono
+            audio_data = np.mean(indata, axis=1)
         
         if self.bypass or not NOVASDR_AVAILABLE or self.novasdr_nr is None:
             filtered_audio = audio_data
+            if self.callback_count == 1:
+                logging.info("Audio callback: BYPASS mode")
         else:
             try:
                 if self.bandpass_filter is not None:
@@ -117,7 +152,11 @@ class AudioProcessor(QThread):
                 
                 filtered_audio = self.novasdr_nr.process(filtered_audio.astype(np.float32))
                 filtered_audio = filtered_audio * self.post_gain
+                
+                if self.callback_count == 1:
+                    logging.info(f"Audio callback: PROCESSING mode (input level: {np.abs(audio_data).max():.4f}, output level: {np.abs(filtered_audio).max():.4f})")
             except Exception as e:
+                logging.error(f"✗ Audio processing error: {e}", exc_info=True)
                 print(f"✗ Audio processing error: {e}")
                 filtered_audio = audio_data
         
@@ -126,9 +165,14 @@ class AudioProcessor(QThread):
         if self.recording:
             self.recording_data.append(filtered_audio.copy())
         
-        outdata[:, 0] = filtered_audio
-        if outdata.shape[1] > 1:
-            outdata[:, 1] = filtered_audio
+        # Handle any number of output channels
+        if outdata.ndim == 1:
+            # Mono output
+            outdata[:] = filtered_audio
+        else:
+            # Multi-channel output - duplicate to all channels
+            for ch in range(outdata.shape[1]):
+                outdata[:, ch] = filtered_audio
     
     def start_processing(self, input_dev, output_dev, preset, mode):
         self.input_device = input_dev
@@ -149,8 +193,10 @@ class AudioProcessor(QThread):
                     preset_config['asnr']
                 )
                 self.post_gain = preset_config['post_gain']
+                logging.info(f"✓ NovaSDR filter initialized: {preset} mode {mode}")
                 print(f"✓ NovaSDR filter initialized: {preset} mode {mode}")
             except Exception as e:
+                logging.error(f"✗ Failed to initialize NovaSDR: {e}", exc_info=True)
                 print(f"✗ Failed to initialize NovaSDR: {e}")
                 import traceback
                 traceback.print_exc()
@@ -158,16 +204,38 @@ class AudioProcessor(QThread):
         else:
             self.log_signal.emit("WARNING: NovaSDR module not available - running in bypass mode")
         
-        self.stream = sd.Stream(
-            device=(input_dev, output_dev),
-            samplerate=SAMPLE_RATE,
-            blocksize=BLOCK_SIZE,
-            channels=2,
-            callback=self.audio_callback,
-            latency='low'
-        )
-        self.stream.start()
-        self.running = True
+        # Query device info to get correct number of channels
+        try:
+            input_info = sd.query_devices(input_dev)
+            output_info = sd.query_devices(output_dev)
+            
+            input_channels = min(input_info['max_input_channels'], 2)  # Use up to 2 channels
+            output_channels = min(output_info['max_output_channels'], 2)  # Use up to 2 channels
+            
+            logging.info(f"Input device: {input_channels} channels, Output device: {output_channels} channels")
+            print(f"Input device: {input_channels} channels, Output device: {output_channels} channels")
+            
+            self.stream = sd.Stream(
+                device=(input_dev, output_dev),
+                samplerate=SAMPLE_RATE,
+                blocksize=BLOCK_SIZE,
+                channels=(input_channels, output_channels),
+                callback=self.audio_callback,
+                latency='low'
+            )
+        except Exception as e:
+            logging.error(f"ERROR: Failed to open audio stream: {e}", exc_info=True)
+            self.log_signal.emit(f"ERROR: Failed to open audio stream: {e}")
+            raise
+        
+        try:
+            self.stream.start()
+            self.running = True
+            logging.info("✓ Audio stream started successfully")
+        except Exception as e:
+            logging.error(f"ERROR: Failed to start audio stream: {e}", exc_info=True)
+            self.log_signal.emit(f"ERROR: Failed to start audio stream: {e}")
+            raise
         
         config = BANDPASS_CONFIG[mode]
         self.log_signal.emit(f"✓ Audio processing started")
@@ -228,42 +296,52 @@ class AudioProcessor(QThread):
             self.log_signal.emit("⏹️ Recording stopped - No data recorded")
             return None
         
-        recordings_dir = Path(__file__).parent / 'recordings'
-        recordings_dir.mkdir(exist_ok=True)
-        
-        now = datetime.now()
-        audio_data = np.concatenate(self.recording_data)
-        duration = len(audio_data) / SAMPLE_RATE
-        
-        audio_int16 = (audio_data * 32767).astype(np.int16)
-        
-        if MP3_AVAILABLE:
-            filename = f"recording_{now.strftime('%Y%m%d_%H%M%S')}.mp3"
-            filepath = recordings_dir / filename
+        try:
+            recordings_dir = Path(__file__).parent / 'recordings'
+            recordings_dir.mkdir(exist_ok=True)
             
-            temp_wav = recordings_dir / f"temp_{now.strftime('%Y%m%d_%H%M%S')}.wav"
-            with wave.open(str(temp_wav), 'wb') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(SAMPLE_RATE)
-                wf.writeframes(audio_int16.tobytes())
+            now = datetime.now()
+            audio_data = np.concatenate(self.recording_data)
+            duration = len(audio_data) / SAMPLE_RATE
             
-            audio = AudioSegment.from_wav(str(temp_wav))
-            audio.export(str(filepath), format='mp3', bitrate='128k')
-            temp_wav.unlink()
-        else:
-            filename = f"recording_{now.strftime('%Y%m%d_%H%M%S')}.wav"
-            filepath = recordings_dir / filename
+            self.log_signal.emit(f"Processing {len(self.recording_data)} chunks, {duration:.1f}s total...")
             
-            with wave.open(str(filepath), 'wb') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(SAMPLE_RATE)
-                wf.writeframes(audio_int16.tobytes())
-        
-        self.recording_data = []
-        self.log_signal.emit(f"⏹️ Recording stopped - Saved: {filename} ({duration:.1f}s)")
-        return filename, duration
+            audio_int16 = (audio_data * 32767).astype(np.int16)
+            
+            if MP3_AVAILABLE:
+                filename = f"recording_{now.strftime('%Y%m%d_%H%M%S')}.mp3"
+                filepath = recordings_dir / filename
+                
+                temp_wav = recordings_dir / f"temp_{now.strftime('%Y%m%d_%H%M%S')}.wav"
+                with wave.open(str(temp_wav), 'wb') as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(SAMPLE_RATE)
+                    wf.writeframes(audio_int16.tobytes())
+                
+                audio = AudioSegment.from_wav(str(temp_wav))
+                audio.export(str(filepath), format='mp3', bitrate='128k')
+                temp_wav.unlink()
+            else:
+                filename = f"recording_{now.strftime('%Y%m%d_%H%M%S')}.wav"
+                filepath = recordings_dir / filename
+                
+                with wave.open(str(filepath), 'wb') as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(SAMPLE_RATE)
+                    wf.writeframes(audio_int16.tobytes())
+            
+            self.recording_data = []
+            self.log_signal.emit(f"⏹️ Saved: {filepath}")
+            self.log_signal.emit(f"   Duration: {duration:.1f}s, Format: {'MP3' if MP3_AVAILABLE else 'WAV'}")
+            return filename, duration
+            
+        except Exception as e:
+            self.log_signal.emit(f"ERROR saving recording: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
 
 class NovaSDRGUI(QMainWindow):
@@ -396,16 +474,23 @@ class NovaSDRGUI(QMainWindow):
         self.rec_start_btn = QPushButton('🔴 Start Recording')
         self.rec_start_btn.clicked.connect(self.start_recording)
         self.rec_start_btn.setEnabled(False)
-        self.rec_start_btn.setStyleSheet('background: #dc2626; color: white; padding: 8px;')
+        self.rec_start_btn.setStyleSheet('background: #dc2626; color: white; padding: 8px; font-weight: bold;')
         rec_buttons_layout.addWidget(self.rec_start_btn)
         
         self.rec_stop_btn = QPushButton('⏹️ Stop Recording')
         self.rec_stop_btn.clicked.connect(self.stop_recording)
         self.rec_stop_btn.setEnabled(False)
-        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 8px;')
+        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 8px; font-weight: bold;')
         rec_buttons_layout.addWidget(self.rec_stop_btn)
         
         rec_layout.addLayout(rec_buttons_layout)
+        
+        # Open folder button
+        self.open_folder_btn = QPushButton('📁 Open Recordings Folder')
+        self.open_folder_btn.clicked.connect(self.open_recordings_folder)
+        self.open_folder_btn.setStyleSheet('background: #3b82f6; color: white; padding: 8px; margin-top: 5px;')
+        rec_layout.addWidget(self.open_folder_btn)
+        
         rec_group.setLayout(rec_layout)
         layout.addWidget(rec_group)
         
@@ -512,11 +597,21 @@ class NovaSDRGUI(QMainWindow):
         self.processor.start_recording()
         self.rec_start_btn.setEnabled(False)
         self.rec_stop_btn.setEnabled(True)
+        self.rec_stop_btn.setStyleSheet('background: #dc2626; color: white; padding: 8px; font-weight: bold;')  # Red when active
     
     def stop_recording(self):
         self.processor.stop_recording()
         self.rec_start_btn.setEnabled(True)
         self.rec_stop_btn.setEnabled(False)
+        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 8px; font-weight: bold;')  # Gray when disabled
+    
+    def open_recordings_folder(self):
+        """Open the recordings folder in Finder"""
+        import subprocess
+        recordings_dir = Path(__file__).parent / 'recordings'
+        recordings_dir.mkdir(exist_ok=True)
+        subprocess.run(['open', str(recordings_dir)])
+        self.add_log(f"📁 Opened: {recordings_dir}")
     
     def add_log(self, message):
         timestamp = time.strftime("%H:%M:%S")
