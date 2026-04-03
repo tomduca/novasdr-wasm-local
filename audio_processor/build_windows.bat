@@ -39,6 +39,7 @@ pyinstaller --name="NovaSDR Audio Processor" ^
     --hidden-import=PyQt5.QtWidgets ^
     --collect-all=sounddevice ^
     --collect-all=scipy ^
+    --collect-all=novasdr_nr ^
     --copy-metadata=numpy ^
     --copy-metadata=scipy ^
     novasdr_gui_qt.py

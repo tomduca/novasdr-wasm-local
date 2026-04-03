@@ -354,7 +354,7 @@ class NovaSDRGUI(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle('NovaSDR Audio Processor')
-        self.setGeometry(100, 100, 700, 800)
+        self.setGeometry(100, 100, 600, 700)
         
         # Central widget
         central_widget = QWidget()
@@ -449,13 +449,13 @@ class NovaSDRGUI(QMainWindow):
         buttons_layout = QHBoxLayout()
         self.start_btn = QPushButton('▶ Start')
         self.start_btn.clicked.connect(self.start_processing)
-        self.start_btn.setStyleSheet('background: #10b981; color: white; padding: 10px; font-weight: bold;')
+        self.start_btn.setStyleSheet('background: #10b981; color: white; padding: 8px; font-weight: bold;')
         buttons_layout.addWidget(self.start_btn)
         
         self.stop_btn = QPushButton('■ Stop')
         self.stop_btn.clicked.connect(self.stop_processing)
         self.stop_btn.setEnabled(False)
-        self.stop_btn.setStyleSheet('background: #ef4444; color: white; padding: 10px; font-weight: bold;')
+        self.stop_btn.setStyleSheet('background: #ef4444; color: white; padding: 8px; font-weight: bold;')
         buttons_layout.addWidget(self.stop_btn)
         
         control_layout.addLayout(buttons_layout)
@@ -474,13 +474,13 @@ class NovaSDRGUI(QMainWindow):
         self.rec_start_btn = QPushButton('🔴 Start Recording')
         self.rec_start_btn.clicked.connect(self.start_recording)
         self.rec_start_btn.setEnabled(False)
-        self.rec_start_btn.setStyleSheet('background: #dc2626; color: white; padding: 8px; font-weight: bold;')
+        self.rec_start_btn.setStyleSheet('background: #dc2626; color: white; padding: 6px; font-weight: bold;')
         rec_buttons_layout.addWidget(self.rec_start_btn)
         
         self.rec_stop_btn = QPushButton('⏹️ Stop Recording')
         self.rec_stop_btn.clicked.connect(self.stop_recording)
         self.rec_stop_btn.setEnabled(False)
-        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 8px; font-weight: bold;')
+        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 6px; font-weight: bold;')
         rec_buttons_layout.addWidget(self.rec_stop_btn)
         
         rec_layout.addLayout(rec_buttons_layout)
@@ -488,7 +488,7 @@ class NovaSDRGUI(QMainWindow):
         # Open folder button
         self.open_folder_btn = QPushButton('📁 Open Recordings Folder')
         self.open_folder_btn.clicked.connect(self.open_recordings_folder)
-        self.open_folder_btn.setStyleSheet('background: #3b82f6; color: white; padding: 8px; margin-top: 5px;')
+        self.open_folder_btn.setStyleSheet('background: #3b82f6; color: white; padding: 6px; margin-top: 3px;')
         rec_layout.addWidget(self.open_folder_btn)
         
         rec_group.setLayout(rec_layout)
@@ -500,17 +500,19 @@ class NovaSDRGUI(QMainWindow):
         
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.log_text.setStyleSheet('background: #1f2937; color: #10b981; font-family: Courier;')
-        self.log_text.setMaximumHeight(200)
+        self.log_text.setStyleSheet('background: #1f2937; color: #10b981; font-family: Courier; font-size: 11px;')
+        self.log_text.setMaximumHeight(120)
         log_layout.addWidget(self.log_text)
         
         log_group.setLayout(log_layout)
         layout.addWidget(log_group)
         
-        # Footer
-        footer = QLabel('NovaSDR Audio Processor\nBased on NovaSDR-WASM')
+        # Footer with repository link
+        footer = QLabel('<a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">github.com/tomduca/novasdr-audio-processor</a>')
+        footer.setOpenExternalLinks(True)
         footer.setAlignment(Qt.AlignCenter)
-        footer.setStyleSheet('color: #6b7280; font-size: 10px; padding: 10px;')
+        footer.setStyleSheet('color: #6b7280; font-size: 10px; padding: 5px;')
+        footer.setTextFormat(Qt.RichText)
         layout.addWidget(footer)
         
         # Initial log
@@ -597,13 +599,13 @@ class NovaSDRGUI(QMainWindow):
         self.processor.start_recording()
         self.rec_start_btn.setEnabled(False)
         self.rec_stop_btn.setEnabled(True)
-        self.rec_stop_btn.setStyleSheet('background: #dc2626; color: white; padding: 8px; font-weight: bold;')  # Red when active
+        self.rec_stop_btn.setStyleSheet('background: #dc2626; color: white; padding: 6px; font-weight: bold;')  # Red when active
     
     def stop_recording(self):
         self.processor.stop_recording()
         self.rec_start_btn.setEnabled(True)
         self.rec_stop_btn.setEnabled(False)
-        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 8px; font-weight: bold;')  # Gray when disabled
+        self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 6px; font-weight: bold;')  # Gray when disabled
     
     def open_recordings_folder(self):
         """Open the recordings folder in Finder"""
