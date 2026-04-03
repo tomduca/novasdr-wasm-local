@@ -507,8 +507,10 @@ class NovaSDRGUI(QMainWindow):
         log_group.setLayout(log_layout)
         layout.addWidget(log_group)
         
-        # Footer with repository link
-        footer = QLabel('Based on NovaSDR NR filter<br><a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">github.com/tomduca/novasdr-audio-processor</a>')
+        # Footer with repository and donation links
+        footer = QLabel('Based on NovaSDR NR filter<br>'
+                       '<a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">GitHub</a> | '
+                       '<a href="https://cafecito.app/lu2met" style="color: #f59e0b; text-decoration: none;">☕ Invitame un cafecito</a>')
         footer.setOpenExternalLinks(True)
         footer.setAlignment(Qt.AlignCenter)
         footer.setStyleSheet('color: #6b7280; font-size: 9px; padding: 5px;')
