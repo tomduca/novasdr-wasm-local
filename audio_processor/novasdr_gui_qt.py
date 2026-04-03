@@ -17,7 +17,7 @@ import logging
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
                              QTextEdit, QRadioButton, QButtonGroup, QCheckBox,
-                             QGroupBox, QMessageBox)
+                             QGroupBox, QMessageBox, QSlider)
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
@@ -96,6 +96,8 @@ class AudioProcessor(QThread):
         self.stream = None
         self.novasdr_nr = None
         self.post_gain = 14.0
+        self.input_gain = 0.05  # Default input gain (5% - very low for hot inputs)
+        self.output_volume = 1.0  # Default output volume (100%)
         self.bandpass_filter = None
         self.zi_bandpass = None
         self.recording_data = []
@@ -137,6 +139,9 @@ class AudioProcessor(QThread):
             # Multiple channels - mix to mono
             audio_data = np.mean(indata, axis=1)
         
+        # Apply input gain to prevent saturation
+        audio_data = audio_data * self.input_gain
+        
         if self.bypass or not NOVASDR_AVAILABLE or self.novasdr_nr is None:
             filtered_audio = audio_data
             if self.callback_count == 1:
@@ -159,6 +164,9 @@ class AudioProcessor(QThread):
                 logging.error(f"✗ Audio processing error: {e}", exc_info=True)
                 print(f"✗ Audio processing error: {e}")
                 filtered_audio = audio_data
+        
+        # Apply output volume control
+        filtered_audio = filtered_audio * self.output_volume
         
         filtered_audio = np.clip(filtered_audio, -0.95, 0.95)
         
@@ -353,7 +361,7 @@ class NovaSDRGUI(QMainWindow):
         self.load_devices()
         
     def init_ui(self):
-        self.setWindowTitle('LU2MET NR Filter')
+        self.setWindowTitle('LU2MET NR Filter v1.0.0-beta')
         self.setGeometry(100, 100, 600, 700)
         
         # Central widget
@@ -441,6 +449,54 @@ class NovaSDRGUI(QMainWindow):
         # Control
         control_group = QGroupBox('⚙️ Control')
         control_layout = QVBoxLayout()
+        
+        # Input Gain Control
+        gain_layout = QHBoxLayout()
+        gain_label = QLabel('Input Gain:')
+        gain_layout.addWidget(gain_label)
+        
+        self.gain_slider = QSlider(Qt.Horizontal)
+        self.gain_slider.setMinimum(1)  # 1% minimum
+        self.gain_slider.setMaximum(100)  # 100% maximum
+        self.gain_slider.setValue(5)  # 5% default (very low for hot inputs)
+        self.gain_slider.setTickPosition(QSlider.TicksBelow)
+        self.gain_slider.setTickInterval(10)
+        self.gain_slider.valueChanged.connect(self.on_gain_change)
+        gain_layout.addWidget(self.gain_slider)
+        
+        self.gain_value_label = QLabel('5%')
+        self.gain_value_label.setStyleSheet('font-weight: bold; min-width: 40px;')
+        gain_layout.addWidget(self.gain_value_label)
+        
+        control_layout.addLayout(gain_layout)
+        
+        gain_info = QLabel('⚠️ Start low (1-10%) and increase until audio is clear without saturation')
+        gain_info.setStyleSheet('color: #f59e0b; font-size: 10px; padding: 2px;')
+        control_layout.addWidget(gain_info)
+        
+        # Output Volume Control
+        volume_layout = QHBoxLayout()
+        volume_label = QLabel('Output Volume:')
+        volume_layout.addWidget(volume_label)
+        
+        self.volume_slider = QSlider(Qt.Horizontal)
+        self.volume_slider.setMinimum(10)  # 10% minimum
+        self.volume_slider.setMaximum(400)  # 400% maximum (4x boost)
+        self.volume_slider.setValue(100)  # 100% default
+        self.volume_slider.setTickPosition(QSlider.TicksBelow)
+        self.volume_slider.setTickInterval(50)
+        self.volume_slider.valueChanged.connect(self.on_volume_change)
+        volume_layout.addWidget(self.volume_slider)
+        
+        self.volume_value_label = QLabel('100%')
+        self.volume_value_label.setStyleSheet('font-weight: bold; min-width: 40px;')
+        volume_layout.addWidget(self.volume_value_label)
+        
+        control_layout.addLayout(volume_layout)
+        
+        volume_info = QLabel('💡 Adjust final output volume (can boost up to 400%)')
+        volume_info.setStyleSheet('color: #3b82f6; font-size: 10px; padding: 2px;')
+        control_layout.addWidget(volume_info)
         
         self.bypass_check = QCheckBox('Bypass (pass-through)')
         self.bypass_check.stateChanged.connect(self.on_bypass_change)
@@ -566,6 +622,20 @@ class NovaSDRGUI(QMainWindow):
         if self.processor.running:
             self.processor.set_preset(preset)
         self.update_preset_info()
+    
+    def on_gain_change(self, value):
+        gain = value / 100.0
+        self.processor.input_gain = gain
+        self.gain_value_label.setText(f'{value}%')
+        if self.processor.running:
+            self.add_log(f"Input gain: {value}%")
+    
+    def on_volume_change(self, value):
+        volume = value / 100.0
+        self.processor.output_volume = volume
+        self.volume_value_label.setText(f'{value}%')
+        if self.processor.running:
+            self.add_log(f"Output volume: {value}%")
     
     def on_bypass_change(self, state):
         self.processor.bypass = (state == Qt.Checked)
