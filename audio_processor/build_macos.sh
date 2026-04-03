@@ -20,6 +20,7 @@ rm -rf build dist *.spec
 pyinstaller --name="NovaSDR Audio Processor" \
     --windowed \
     --onedir \
+    --icon=app_icon.icns \
     --osx-bundle-identifier=com.lu2met.novasdr \
     --add-data="recordings:recordings" \
     --add-binary="$NOVASDR_MODULE/novasdr_nr*.so:." \

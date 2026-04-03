@@ -22,6 +22,7 @@ REM Build the application
 pyinstaller --name="NovaSDR Audio Processor" ^
     --windowed ^
     --onedir ^
+    --icon=app_icon.ico ^
     --add-data="recordings;recordings" ^
     --add-binary="%NOVASDR_MODULE%\novasdr_nr*.pyd;." ^
     --hidden-import=numpy ^
