@@ -19,7 +19,7 @@ if exist dist rmdir /s /q dist
 if exist "NovaSDR Audio Processor.spec" del "NovaSDR Audio Processor.spec"
 
 REM Build the application
-pyinstaller --name="NovaSDR Audio Processor" ^
+pyinstaller --name="LU2MET_NR" ^
     --windowed ^
     --onedir ^
     --icon=app_icon.ico ^
@@ -47,9 +47,9 @@ pyinstaller --name="NovaSDR Audio Processor" ^
 
 echo.
 echo Build complete!
-echo Application: dist\NovaSDR Audio Processor\NovaSDR Audio Processor.exe
+echo Application: dist\LU2MET_NR\LU2MET_NR.exe
 echo.
-echo To run: dist\NovaSDR Audio Processor\NovaSDR Audio Processor.exe
+echo To run: dist\LU2MET_NR\LU2MET_NR.exe
 echo.
 echo Note: The application includes all dependencies and the NovaSDR Rust module.
 pause

@@ -353,7 +353,7 @@ class NovaSDRGUI(QMainWindow):
         self.load_devices()
         
     def init_ui(self):
-        self.setWindowTitle('NovaSDR Audio Processor')
+        self.setWindowTitle('LU2MET NR Filter')
         self.setGeometry(100, 100, 600, 700)
         
         # Central widget
@@ -362,8 +362,8 @@ class NovaSDRGUI(QMainWindow):
         layout = QVBoxLayout(central_widget)
         
         # Header
-        header = QLabel('📻 NovaSDR Audio Processor')
-        header.setFont(QFont('Arial', 18, QFont.Bold))
+        header = QLabel('📻 LU2MET NR Filter')
+        header.setFont(QFont('Arial', 16, QFont.Bold))
         header.setAlignment(Qt.AlignCenter)
         header.setStyleSheet('background: #667eea; color: white; padding: 15px; border-radius: 8px;')
         layout.addWidget(header)
@@ -508,10 +508,10 @@ class NovaSDRGUI(QMainWindow):
         layout.addWidget(log_group)
         
         # Footer with repository link
-        footer = QLabel('<a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">github.com/tomduca/novasdr-audio-processor</a>')
+        footer = QLabel('Based on NovaSDR NR filter<br><a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">github.com/tomduca/novasdr-audio-processor</a>')
         footer.setOpenExternalLinks(True)
         footer.setAlignment(Qt.AlignCenter)
-        footer.setStyleSheet('color: #6b7280; font-size: 10px; padding: 5px;')
+        footer.setStyleSheet('color: #6b7280; font-size: 9px; padding: 5px;')
         footer.setTextFormat(Qt.RichText)
         layout.addWidget(footer)
         
