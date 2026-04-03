@@ -21,7 +21,7 @@ if exist "NovaSDR Audio Processor.spec" del "NovaSDR Audio Processor.spec"
 REM Build the application
 pyinstaller --name="LU2MET_NR" ^
     --windowed ^
-    --onedir ^
+    --onefile ^
     --icon=app_icon.ico ^
     --add-data="recordings;recordings" ^
     --add-binary="%NOVASDR_MODULE%\novasdr_nr*.pyd;." ^
@@ -47,9 +47,11 @@ pyinstaller --name="LU2MET_NR" ^
 
 echo.
 echo Build complete!
-echo Application: dist\LU2MET_NR\LU2MET_NR.exe
+echo Application: dist\LU2MET_NR.exe
 echo.
-echo To run: dist\LU2MET_NR\LU2MET_NR.exe
+echo To run: dist\LU2MET_NR.exe
+echo.
+echo File size should be approximately 100-150 MB
 echo.
 echo Note: The application includes all dependencies and the NovaSDR Rust module.
 pause
