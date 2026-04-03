@@ -608,12 +608,24 @@ class NovaSDRGUI(QMainWindow):
         self.rec_stop_btn.setStyleSheet('background: #6b7280; color: white; padding: 6px; font-weight: bold;')  # Gray when disabled
     
     def open_recordings_folder(self):
-        """Open the recordings folder in Finder"""
+        """Open the recordings folder in file explorer"""
         import subprocess
+        import platform
+        
         recordings_dir = Path(__file__).parent / 'recordings'
         recordings_dir.mkdir(exist_ok=True)
-        subprocess.run(['open', str(recordings_dir)])
-        self.add_log(f"📁 Opened: {recordings_dir}")
+        
+        try:
+            system = platform.system()
+            if system == 'Windows':
+                subprocess.run(['explorer', str(recordings_dir)])
+            elif system == 'Darwin':  # macOS
+                subprocess.run(['open', str(recordings_dir)])
+            else:  # Linux
+                subprocess.run(['xdg-open', str(recordings_dir)])
+            self.add_log(f"📁 Opened: {recordings_dir}")
+        except Exception as e:
+            self.add_log(f"❌ Error opening folder: {e}")
     
     def add_log(self, message):
         timestamp = time.strftime("%H:%M:%S")
