@@ -507,13 +507,21 @@ class NovaSDRGUI(QMainWindow):
         log_group.setLayout(log_layout)
         layout.addWidget(log_group)
         
-        # Footer with repository and donation links
-        footer = QLabel('Based on NovaSDR NR filter<br>'
-                       '<a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">GitHub</a> | '
-                       '<a href="https://cafecito.app/lu2met" style="color: #f59e0b; text-decoration: none;">☕ Invitame un cafecito</a>')
+        # Cafecito donation link
+        cafecito = QLabel('If you found this useful, <a href="https://cafecito.app/lu2met" style="color: #f59e0b; text-decoration: none; font-weight: bold;">☕ buy me a coffee</a>')
+        cafecito.setOpenExternalLinks(True)
+        cafecito.setAlignment(Qt.AlignCenter)
+        cafecito.setStyleSheet('color: #6b7280; font-size: 13px; padding: 6px;')
+        cafecito.setTextFormat(Qt.RichText)
+        cafecito.setToolTip('Si te resultó útil, invitame un cafecito')
+        layout.addWidget(cafecito)
+        
+        # Footer with repository link (smaller)
+        footer = QLabel('Based on NovaSDR NR filter | '
+                       '<a href="https://github.com/tomduca/novasdr-audio-processor" style="color: #3b82f6; text-decoration: none;">GitHub</a>')
         footer.setOpenExternalLinks(True)
         footer.setAlignment(Qt.AlignCenter)
-        footer.setStyleSheet('color: #6b7280; font-size: 9px; padding: 5px;')
+        footer.setStyleSheet('color: #6b7280; font-size: 9px; padding: 2px;')
         footer.setTextFormat(Qt.RichText)
         layout.addWidget(footer)
         
