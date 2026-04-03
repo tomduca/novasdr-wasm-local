@@ -35,6 +35,19 @@ cd audio_processor
 ./run_ultra.sh
 ```
 
+## ⚙️ Usage Instructions
+
+### Audio Level Calibration
+
+**Important:** The radio's output audio level must be set very low for optimal noise reduction.
+
+1. **Start without filtering** (bypass mode enabled)
+2. **Adjust your radio's volume** to a very low level
+3. **Test:** Disconnect the audio cable - you should barely hear anything from the radio's speaker
+4. **Enable filtering** once the level is properly calibrated
+
+**Why?** High input levels can cause distortion and reduce the effectiveness of the noise reduction filter. The filter works best with clean, low-level audio signals.
+
 ## Architecture
 
 ```
