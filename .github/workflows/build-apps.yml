@@ -74,6 +74,12 @@ jobs:
         source venv/bin/activate
         ./build_macos.sh
     
+    - name: Remove quarantine attributes
+      run: |
+        cd audio_processor/dist
+        xattr -cr LU2MET_NR.app
+        find LU2MET_NR.app -type f -exec xattr -c {} \;
+    
     - name: Create versioned ZIP
       run: |
         cd audio_processor/dist
