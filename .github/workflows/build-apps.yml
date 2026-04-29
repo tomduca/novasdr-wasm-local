@@ -15,6 +15,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="v1.0.0-beta-$(date +'%Y%m%d-%H%M%S')-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -67,18 +74,17 @@ jobs:
         source venv/bin/activate
         ./build_macos.sh
     
-    - name: Create DMG (optional)
+    - name: Create versioned ZIP
       run: |
         cd audio_processor/dist
-        # Create a simple zip for now
-        zip -r LU2MET_NR-macos.zip LU2MET_NR.app
+        zip -r LU2MET_NR-macos-${{ steps.version.outputs.version }}.zip LU2MET_NR.app
     
     - name: Upload macOS app
       uses: actions/upload-artifact@v4
       with:
-        name: LU2MET_NR-macos
-        path: audio_processor/dist/LU2MET_NR-macos.zip
-        retention-days: 30
+        name: LU2MET_NR-macos-${{ steps.version.outputs.version }}
+        path: audio_processor/dist/LU2MET_NR-macos-${{ steps.version.outputs.version }}.zip
+        retention-days: 90
 
   build-windows:
     runs-on: windows-latest
@@ -86,6 +92,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Generate version
+      id: version
+      run: |
+        $VERSION = "v1.0.0-beta-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+      shell: pwsh
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -144,18 +158,19 @@ jobs:
         .\build_windows.bat
       shell: pwsh
     
-    - name: Create ZIP archive
+    - name: Create versioned ZIP archive
       run: |
         cd audio_processor\dist
-        Compress-Archive -Path LU2MET_NR.exe -DestinationPath LU2MET_NR-windows.zip
+        $VERSION = "${{ steps.version.outputs.version }}"
+        Compress-Archive -Path LU2MET_NR.exe -DestinationPath "LU2MET_NR-windows-$VERSION.zip"
       shell: pwsh
     
     - name: Upload Windows app
       uses: actions/upload-artifact@v4
       with:
-        name: LU2MET_NR-windows
-        path: audio_processor/dist/LU2MET_NR-windows.zip
-        retention-days: 30
+        name: LU2MET_NR-windows-${{ steps.version.outputs.version }}
+        path: audio_processor/dist/LU2MET_NR-windows-${{ steps.version.outputs.version }}.zip
+        retention-days: 90
 
   create-release:
     needs: [build-macos, build-windows]
@@ -163,40 +178,64 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
-    - name: Download macOS artifact
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Generate release version
+      id: version
+      run: |
+        VERSION="v1.0.0-beta-$(date +'%Y%m%d-%H%M%S')-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "date=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+    
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        name: LU2MET_NR-macos
         path: ./artifacts
     
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: LU2MET_NR-windows
-        path: ./artifacts
-    
-    - name: Get current date
-      id: date
-      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+    - name: List artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        ls -R ./artifacts/
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: build-${{ steps.date.outputs.date }}-${{ github.run_number }}
-        name: Build ${{ steps.date.outputs.date }} (#${{ github.run_number }})
+        tag_name: ${{ steps.version.outputs.version }}
+        name: LU2MET NR Filter ${{ steps.version.outputs.version }}
         body: |
-          Automated build from commit ${{ github.sha }}
+          ## 📻 LU2MET NR Filter - Automated Build
           
-          ## Downloads
-          - **macOS**: LU2MET_NR-macos.zip
-          - **Windows**: LU2MET_NR-windows.zip
+          **Build Date:** ${{ steps.version.outputs.date }}  
+          **Commit:** ${{ github.sha }}  
+          **Branch:** ${{ github.ref_name }}
           
-          ## Changes
+          ### 📦 Downloads
+          - **macOS**: `LU2MET_NR-macos-${{ steps.version.outputs.version }}.zip`
+          - **Windows**: `LU2MET_NR-windows-${{ steps.version.outputs.version }}.zip`
+          
+          ### ✨ Features
+          - NovaSDR Spectral Noise Reduction
+          - Input Gain Control (1-100%, logarithmic)
+          - Output Volume Control (10-400%, logarithmic)
+          - SSB and CW modes
+          - Audio recording (MP3/WAV)
+          
+          ### 📝 Changes
+          ```
           ${{ github.event.head_commit.message }}
-        files: |
-          ./artifacts/LU2MET_NR-macos.zip
-          ./artifacts/LU2MET_NR-windows.zip
+          ```
+          
+          ### 🔧 Installation
+          - **macOS**: Extract ZIP, move to Applications, right-click → Open (first time)
+          - **Windows**: Extract ZIP, run LU2MET_NR.exe
+          
+          ---
+          **73 de LU2MET** 📻
+        files: ./artifacts/**/*.zip
         draft: false
-        prerelease: false
+        prerelease: true
+        fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

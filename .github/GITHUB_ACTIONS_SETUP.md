@@ -38,13 +38,30 @@ git push origin main
 
 Ahora cada vez que hagas push a `main`, se compilarán automáticamente ambas aplicaciones.
 
+## 📌 Versionado Automático
+
+Cada build tiene su propia versión única:
+
+**Formato:** `v1.0.0-beta-YYYYMMDD-HHMMSS-commit`
+
+**Ejemplo:** `v1.0.0-beta-20260429-091500-a3f2c1b`
+
+- **Fecha y hora:** Timestamp del build
+- **Commit:** Hash corto del commit de git
+- **No se sobreescribe:** Cada build se guarda por separado
+- **Retención:** 90 días en Artifacts
+
 ### Descargar Builds
 
-**Opción 1: Desde Actions**
+**Opción 1: Desde Actions** (todos los builds)
 - GitHub → Actions → Click en el run → Artifacts
+- Cada artifact tiene su versión única
+- Se guardan por 90 días
 
-**Opción 2: Desde Releases** (automático)
-- GitHub → Releases → Última versión
+**Opción 2: Desde Releases** (solo push a main)
+- GitHub → Releases → Selecciona la versión que querés
+- Cada release tiene su tag único
+- **No se sobreescriben** - todas las versiones quedan guardadas
 
 ### Ejecutar Manualmente
 
