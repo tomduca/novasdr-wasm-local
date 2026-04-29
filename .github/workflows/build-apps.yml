@@ -127,42 +127,41 @@ jobs:
       working-directory: audio_processor
       shell: pwsh
       run: |
-        cd audio_processor
         python -m venv venv
         .\venv\Scripts\Activate.ps1
         python -m pip install --upgrade pip
     
     - name: Install Python dependencies
+      working-directory: audio_processor
       run: |
-        cd audio_processor
         .\venv\Scripts\Activate.ps1
         pip install PyQt5 sounddevice scipy pydub numpy maturin pyinstaller
       shell: pwsh
     
     - name: Build NovaSDR Rust module
+      working-directory: novasdr_nr_py
       run: |
-        cd novasdr_nr_py
         ..\audio_processor\venv\Scripts\Activate.ps1
         maturin develop --release
       shell: pwsh
     
     - name: Verify NovaSDR module
+      working-directory: audio_processor
       run: |
-        cd audio_processor
         .\venv\Scripts\Activate.ps1
         python -c "import novasdr_nr; print('✓ NovaSDR loaded:', novasdr_nr.__file__)"
       shell: pwsh
     
     - name: Build Windows app
+      working-directory: audio_processor
       run: |
-        cd audio_processor
         .\venv\Scripts\Activate.ps1
         .\build_windows.bat
       shell: pwsh
     
     - name: Create versioned ZIP archive
+      working-directory: audio_processor/dist
       run: |
-        cd audio_processor\dist
         $VERSION = "${{ steps.version.outputs.version }}"
         Compress-Archive -Path LU2MET_NR.exe -DestinationPath "LU2MET_NR-windows-$VERSION.zip"
       shell: pwsh
