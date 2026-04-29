@@ -675,7 +675,7 @@ impl SpectralNoiseReduction {
                         ph1y = ph1y.min(1.0);
                     }
 
-                    let xtr = (1.0 - ph1y) * NR_X[bindx] + ph1y * self.xt[bindx];
+                    let xtr = (1.0 - ph1y) * nr_x[bindx] + ph1y * self.xt[bindx];
                     self.xt[bindx] = self.ax * self.xt[bindx] + (1.0 - self.ax) * xtr;
                 }
 
