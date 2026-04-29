@@ -631,11 +631,25 @@ class NovaSDRGUI(QMainWindow):
             self.add_log(f"Input gain: {value}%")
     
     def on_volume_change(self, value):
-        volume = value / 100.0
-        self.processor.output_volume = volume
+        # Logarithmic volume scaling for better control
+        # Maps slider range (10-400) to logarithmic volume curve
+        # Formula: volume = 10^((value/100 - 1) * 2)
+        # This gives smooth control at low volumes and proper boost at high volumes
+        linear_percent = value / 100.0
+        
+        if value <= 100:
+            # Below 100%: logarithmic attenuation (10% to 100%)
+            # Maps 10-100 slider to 0.1-1.0 volume logarithmically
+            log_volume = 10 ** ((linear_percent - 1) * 2)
+        else:
+            # Above 100%: logarithmic boost (100% to 400%)
+            # Maps 100-400 slider to 1.0-4.0 volume logarithmically
+            log_volume = 10 ** ((linear_percent - 1) * 0.6)
+        
+        self.processor.output_volume = log_volume
         self.volume_value_label.setText(f'{value}%')
         if self.processor.running:
-            self.add_log(f"Output volume: {value}%")
+            self.add_log(f"Output volume: {value}% (actual: {log_volume:.2f}x)")
     
     def on_bypass_change(self, state):
         self.processor.bypass = (state == Qt.Checked)

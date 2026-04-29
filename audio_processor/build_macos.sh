@@ -9,9 +9,16 @@ source venv/bin/activate
 # Install PyInstaller
 pip install pyinstaller
 
-# Find the novasdr_nr module
-NOVASDR_MODULE=$(python3 -c "import novasdr_nr; import os; print(os.path.dirname(novasdr_nr.__file__))")
-echo "NovaSDR module found at: $NOVASDR_MODULE"
+# Find the novasdr_nr module (optional)
+NOVASDR_MODULE=$(python3 -c "import novasdr_nr; import os; print(os.path.dirname(novasdr_nr.__file__))" 2>/dev/null || echo "")
+
+if [ -n "$NOVASDR_MODULE" ]; then
+    echo "NovaSDR module found at: $NOVASDR_MODULE"
+    NOVASDR_BINARY="--add-binary=$NOVASDR_MODULE/novasdr_nr*.so:."
+else
+    echo "NovaSDR module not found - building without it"
+    NOVASDR_BINARY=""
+fi
 
 # Clean previous builds
 rm -rf build dist *.spec
@@ -23,7 +30,7 @@ pyinstaller --name="LU2MET_NR" \
     --icon=app_icon.icns \
     --osx-bundle-identifier=com.lu2met.nr \
     --add-data="recordings:recordings" \
-    --add-binary="$NOVASDR_MODULE/novasdr_nr*.so:." \
+    $NOVASDR_BINARY \
     --hidden-import=numpy \
     --hidden-import=numpy.core._multiarray_umath \
     --hidden-import=scipy \
