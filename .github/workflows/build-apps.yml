@@ -149,7 +149,7 @@ jobs:
       working-directory: audio_processor
       run: |
         .\venv\Scripts\Activate.ps1
-        python -c "import novasdr_nr; print('✓ NovaSDR loaded:', novasdr_nr.__file__)"
+        python -c "import novasdr_nr; print('NovaSDR loaded:', novasdr_nr.__file__)"
       shell: pwsh
     
     - name: Build Windows app
