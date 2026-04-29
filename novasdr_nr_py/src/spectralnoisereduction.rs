@@ -64,6 +64,7 @@ static f32_t ap;    // noise output smoothing factor
 const FFT_FULL: usize = 512;
 const FFT_HALF: usize = 256;
 
+#[allow(dead_code)]
 pub struct SpectralNoiseReduction {
     init: bool,
     init_counter: u8,
@@ -102,7 +103,9 @@ pub struct SpectralNoiseReduction {
     ax: f32,   // noise output smoothing factor
     ap: f32,   // noise output smoothing factor
 
+    #[allow(non_snake_case)]
     NR_FFT: Arc<dyn Fft<f32>>,
+    #[allow(non_snake_case)]
     NR_iFFT: Arc<dyn Fft<f32>>,
 
     psthr: f32,   // threshold for smoothed speech probability [0.99]
@@ -111,6 +114,7 @@ pub struct SpectralNoiseReduction {
     pspri: f32,   // prior speech probability [0.5]
 }
 
+#[allow(non_upper_case_globals)]
 const sqrtHann_256: [f32; 256] = [
     0.0,
     0.01231966,
@@ -404,6 +408,7 @@ void nr_spectral_init(int rx_chan, TYPEREAL nr_param[NOISE_PARAMS])
 */
 
 impl SpectralNoiseReduction {
+    #[allow(non_snake_case)]
     pub fn new(snd_rate: u32, NR_S_GAIN: f32, NR_ALPHA: f32, NR_ASNR: f32) -> Self {
         let tinc = 1.0/( snd_rate as f32 / FFT_FULL as f32 * 2.0);
         let tax = -tinc / (0.8_f32).ln();
@@ -411,7 +416,9 @@ impl SpectralNoiseReduction {
         let xih1r = 1.0 / (1.0 + NR_ASNR) - 1.0;
         let pfac = (1.0 / 0.5 - 1.0) * (1.0 + NR_ASNR);
 
+        #[allow(non_snake_case)]
         let NR_FFT = FftPlanner::new().plan_fft_forward(FFT_FULL);
+        #[allow(non_snake_case)]
         let NR_iFFT = FftPlanner::new().plan_fft_inverse(FFT_FULL);
         Self {
             init: true,
@@ -508,11 +515,15 @@ impl SpectralNoiseReduction {
     */
     pub fn process_chunk(&mut self, buf: &mut [f32]) {
         let mut ai;
+        #[allow(non_snake_case)]
         let mut VAD_low = 0;
+        #[allow(non_snake_case)]
         let mut VAD_high = 0;
 
+        #[allow(non_upper_case_globals)]
         const snr_prio_min_dB: f32 = -30.0;
         let snr_prio_min: f32 = 10.0_f32.powf(snr_prio_min_dB / 10.0);
+        #[allow(non_upper_case_globals)]
         const NR_width: usize = 4;
 
         // INITIALIZATION ONCE 1
@@ -606,6 +617,7 @@ impl SpectralNoiseReduction {
                 }
             }
         */
+            #[allow(non_snake_case)]
             let mut NR_X = [0.0; FFT_HALF];
 
             for bindx in 0..FFT_HALF {

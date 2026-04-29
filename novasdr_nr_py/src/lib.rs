@@ -25,7 +25,7 @@ impl SpectralNoiseReduction {
     ) -> Bound<'py, PyArray1<f32>> {
         let mut data = audio.to_vec().unwrap();
         self.inner.process(&mut data);
-        PyArray1::from_vec_bound(py, data)
+        PyArray1::from_vec(py, data)
     }
 }
 
