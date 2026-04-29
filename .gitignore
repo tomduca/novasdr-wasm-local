@@ -40,3 +40,4 @@ audio_processor/recordings/*.mp3
 # Temporary test files
 test_*.py
 simple_*.py
+temp

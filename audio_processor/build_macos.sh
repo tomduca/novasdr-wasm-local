@@ -33,7 +33,6 @@ pyinstaller --name="LU2MET_NR" \
     $NOVASDR_BINARY \
     --hidden-import=numpy \
     --hidden-import=numpy.core._multiarray_umath \
-    --hidden-import=scipy \
     --hidden-import=scipy.signal \
     --hidden-import=scipy.fft \
     --hidden-import=sounddevice \
@@ -45,9 +44,14 @@ pyinstaller --name="LU2MET_NR" \
     --hidden-import=PyQt5.QtGui \
     --hidden-import=PyQt5.QtWidgets \
     --collect-all=sounddevice \
-    --collect-all=scipy \
     --copy-metadata=numpy \
     --copy-metadata=scipy \
+    --exclude-module=scipy.tests \
+    --exclude-module=scipy.*.tests \
+    --exclude-module=numpy.tests \
+    --exclude-module=PyQt5.tests \
+    --exclude-module=pytest \
+    --exclude-module=unittest \
     novasdr_gui_qt.py
 
 echo ""
