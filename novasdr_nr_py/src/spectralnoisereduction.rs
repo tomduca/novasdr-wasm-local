@@ -103,10 +103,8 @@ pub struct SpectralNoiseReduction {
     ax: f32,   // noise output smoothing factor
     ap: f32,   // noise output smoothing factor
 
-    #[allow(non_snake_case)]
-    NR_FFT: Arc<dyn Fft<f32>>,
-    #[allow(non_snake_case)]
-    NR_iFFT: Arc<dyn Fft<f32>>,
+    #[allow(non_snake_case)] NR_FFT: Arc<dyn Fft<f32>>,
+    #[allow(non_snake_case)] NR_iFFT: Arc<dyn Fft<f32>>,
 
     psthr: f32,   // threshold for smoothed speech probability [0.99]
     pnsaf: f32,   // noise probability safety value [0.01]
