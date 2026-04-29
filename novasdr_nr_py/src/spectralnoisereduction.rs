@@ -666,7 +666,7 @@ impl SpectralNoiseReduction {
                 for bindx in 0..FFT_HALF {    // 1. Step of NR - calculate the SNR's
                     let mut ph1y: f32;
 
-                    ph1y = 1.0 / (1.0 + self.pfac * (self.xih1r * NR_X[bindx] / self.xt[bindx]).exp());
+                    ph1y = 1.0 / (1.0 + self.pfac * (self.xih1r * nr_x[bindx] / self.xt[bindx]).exp());
                     self.pslp[bindx] = self.ap * self.pslp[bindx] + (1.0 - self.ap) * ph1y;
 
                     if self.pslp[bindx] > self.psthr {
