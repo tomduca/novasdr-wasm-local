@@ -804,11 +804,10 @@ impl SpectralNoiseReduction {
                 }
                 
                 let nn: usize;
-                let mut power_ratio = post_power / pre_power;
+                let power_ratio = post_power / pre_power;
                 let power_threshold: f32 = 0.4;
 
                 if power_ratio > power_threshold {
-                    power_ratio = 1.0;
                     nn = 1;
                 } else {
                     nn = 1 + 2 * (0.5 + NR_width as f32 * (1.0 - power_ratio / power_threshold)) as usize;
