@@ -519,7 +519,7 @@ impl SpectralNoiseReduction {
         // INITIALIZATION ONCE 1
         if self.first_time == 1 {
             for bindx in 0..FFT_HALF {
-                self.last_sample_buffer[bindx] = buf[k] * SQRT_HANN_256[bindx];
+                self.last_sample_buffer[bindx] = buf[bindx] * SQRT_HANN_256[bindx];
                 self.nr_g[bindx] = 1.0;
                 self.nr_hk_old[bindx] = 1.0;
                 self.nr_nest[bindx] = 0.0;
@@ -799,7 +799,7 @@ impl SpectralNoiseReduction {
                 if power_ratio > power_threshold {
                     nn = 1;
                 } else {
-                    nn = 1 + 2 * (0.5 + NR_width as f32 * (1.0 - power_ratio / power_threshold)) as usize;
+                    nn = 1 + 2 * (0.5 + NR_WIDTH as f32 * (1.0 - power_ratio / power_threshold)) as usize;
                 }
 
             /* 
@@ -855,7 +855,7 @@ impl SpectralNoiseReduction {
                 }
 
                 // and now the edges - only going NN steps forward and taking the average lower edge
-                for bindx in VAD_low..VAD_low + nn / 2 {
+                for bindx in vad_low..vad_low + nn / 2 {
                     //assert_array_dim!(bindx, FFT_HALF);
                     self.nr_nest[bindx] = 0.0;
                     for m in bindx..bindx + nn {
@@ -904,7 +904,7 @@ impl SpectralNoiseReduction {
             // perform iFFT (in-place)
             arm_cfft_f32(NR_iFFT, (TYPEREAL*) s->FFT_buffer, 1, 1);
             */
-            for bindx in VAD_low..VAD_high {
+            for bindx in vad_low..vad_high {
                 self.fft_buffer[bindx].re = self.fft_buffer [bindx].re * self.nr_g[bindx];
                 self.fft_buffer[bindx].im = self.fft_buffer [bindx].im * self.nr_g[bindx];
 
@@ -916,7 +916,7 @@ impl SpectralNoiseReduction {
             }
 
             // perform iFFT (in-place)
-            self.NR_iFFT.process(&mut self.fft_buffer);
+            self.nr_ifft.process(&mut self.fft_buffer);
             /*
             // perform windowing after iFFT
             for (int i = 0; i < FFT_FULL; i++) {
@@ -937,7 +937,7 @@ impl SpectralNoiseReduction {
     }
     */
             for i in 0..FFT_FULL {
-                self.fft_buffer[i].re *= sqrtHann_256[i/2];
+                self.fft_buffer[i].re *= SQRT_HANN_256[i/2];
             }
 
             // do the overlap & add
