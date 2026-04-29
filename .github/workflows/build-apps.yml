@@ -122,12 +122,15 @@ jobs:
           novasdr_nr_py/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Create virtual environment
+    - name: Create virtual environment and upgrade pip (Windows)
+      if: runner.os == 'Windows'
+      working-directory: audio_processor
+      shell: pwsh
       run: |
         cd audio_processor
         python -m venv venv
         .\venv\Scripts\Activate.ps1
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
       shell: pwsh
     
     - name: Install Python dependencies
