@@ -103,10 +103,8 @@ pub struct SpectralNoiseReduction {
     ax: f32,   // noise output smoothing factor
     ap: f32,   // noise output smoothing factor
 
-    #[allow(non_snake_case)]
-    NR_FFT: Arc<dyn Fft<f32>>,
-    #[allow(non_snake_case)]
-    NR_iFFT: Arc<dyn Fft<f32>>,
+    nr_fft: Arc<dyn Fft<f32>>,
+    nr_ifft: Arc<dyn Fft<f32>>,
 
     psthr: f32,   // threshold for smoothed speech probability [0.99]
     pnsaf: f32,   // noise probability safety value [0.01]
@@ -114,8 +112,7 @@ pub struct SpectralNoiseReduction {
     pspri: f32,   // prior speech probability [0.5]
 }
 
-#[allow(non_upper_case_globals)]
-const sqrtHann_256: [f32; 256] = [
+const SQRT_HANN_256: [f32; 256] = [
     0.0,
     0.01231966,
     0.024637449,
@@ -408,27 +405,24 @@ void nr_spectral_init(int rx_chan, TYPEREAL nr_param[NOISE_PARAMS])
 */
 
 impl SpectralNoiseReduction {
-    #[allow(non_snake_case)]
-    pub fn new(snd_rate: u32, NR_S_GAIN: f32, NR_ALPHA: f32, NR_ASNR: f32) -> Self {
+    pub fn new(snd_rate: u32, nr_s_gain: f32, nr_alpha: f32, nr_asnr: f32) -> Self {
         let tinc = 1.0/( snd_rate as f32 / FFT_FULL as f32 * 2.0);
         let tax = -tinc / (0.8_f32).ln();
         let tap = -tinc / (0.9_f32).ln();
-        let xih1r = 1.0 / (1.0 + NR_ASNR) - 1.0;
-        let pfac = (1.0 / 0.5 - 1.0) * (1.0 + NR_ASNR);
+        let xih1r = 1.0 / (1.0 + nr_asnr) - 1.0;
+        let pfac = (1.0 / 0.5 - 1.0) * (1.0 + nr_asnr);
 
-        #[allow(non_snake_case)]
-        let NR_FFT = FftPlanner::new().plan_fft_forward(FFT_FULL);
-        #[allow(non_snake_case)]
-        let NR_iFFT = FftPlanner::new().plan_fft_inverse(FFT_FULL);
+        let nr_fft = FftPlanner::new().plan_fft_forward(FFT_FULL);
+        let nr_ifft = FftPlanner::new().plan_fft_inverse(FFT_FULL);
         Self {
             init: true,
             init_counter: 0,
             first_time: 1,
             snd_rate,
-            final_gain: NR_S_GAIN,
-            alpha: NR_ALPHA,
-            asnr: NR_ASNR,
-            xih1: NR_ASNR,
+            final_gain: nr_s_gain,
+            alpha: nr_alpha,
+            asnr: nr_asnr,
+            xih1: nr_asnr,
             xih1r,
             pfac,
             ring_buf: VecDeque::new(),
@@ -451,8 +445,8 @@ impl SpectralNoiseReduction {
             tap,
             ax: (-tinc / tax).exp(),
             ap: (-tinc / tap).exp(),
-            NR_FFT,
-            NR_iFFT,
+            nr_fft,
+            nr_ifft,
             psthr: 0.99,
             pnsaf: 0.01,
             psini: 0.5,
@@ -515,21 +509,17 @@ impl SpectralNoiseReduction {
     */
     pub fn process_chunk(&mut self, buf: &mut [f32]) {
         let mut ai;
-        #[allow(non_snake_case)]
-        let mut VAD_low = 0;
-        #[allow(non_snake_case)]
-        let mut VAD_high = 0;
+        let mut vad_low = 0;
+        let mut vad_high = 0;
 
-        #[allow(non_upper_case_globals)]
-        const snr_prio_min_dB: f32 = -30.0;
-        let snr_prio_min: f32 = 10.0_f32.powf(snr_prio_min_dB / 10.0);
-        #[allow(non_upper_case_globals)]
-        const NR_width: usize = 4;
+        const SNR_PRIO_MIN_DB: f32 = -30.0;
+        let snr_prio_min: f32 = 10.0_f32.powf(SNR_PRIO_MIN_DB / 10.0);
+        const NR_WIDTH: usize = 4;
 
         // INITIALIZATION ONCE 1
         if self.first_time == 1 {
             for bindx in 0..FFT_HALF {
-                self.last_sample_buffer[bindx] = 0.0;
+                self.last_sample_buffer[bindx] = buf[k] * SQRT_HANN_256[bindx];
                 self.nr_g[bindx] = 1.0;
                 self.nr_hk_old[bindx] = 1.0;
                 self.nr_nest[bindx] = 0.0;
@@ -590,10 +580,10 @@ impl SpectralNoiseReduction {
 
             // perform windowing on samples in the FFT_buffer
             for i in 0..FFT_FULL {
-                self.fft_buffer[i].re *= sqrtHann_256[i / 2];
+                self.fft_buffer[i].re *= SQRT_HANN_256[i / 2];
             }
 
-            self.NR_FFT.process(&mut self.fft_buffer);
+            self.nr_fft.process(&mut self.fft_buffer);
         /*
             f32_t NR_X[FFT_HALF];
 
@@ -617,19 +607,18 @@ impl SpectralNoiseReduction {
                 }
             }
         */
-            #[allow(non_snake_case)]
-            let mut NR_X = [0.0; FFT_HALF];
+            let mut nr_x = [0.0; FFT_HALF];
 
             for bindx in 0..FFT_HALF {
                 let re = self.fft_buffer[bindx].re;
                 let im = self.fft_buffer[bindx].im;
-                NR_X[bindx] = re * re + im * im;    // squared magnitude for the current frame
+                nr_x[bindx] = re * re + im * im;    // squared magnitude for the current frame
             }
 
             if self.first_time == 2 {
                 for bindx in 0..FFT_HALF {
                     // we do it 20 times to average over 20 frames for approx 100 ms only on NR_on/bandswitch/modeswitch ...
-                    self.nr_nest[bindx] = self.nr_nest[bindx] + 0.05 * NR_X[bindx];
+                    self.nr_nest[bindx] = self.nr_nest[bindx] + 0.05 * nr_x[bindx];
                     self.xt[bindx] = self.psini * self.nr_nest[bindx];
                 }
 
@@ -692,12 +681,12 @@ impl SpectralNoiseReduction {
 
                 for bindx in 0..FFT_HALF {    // 1. Step of NR - calculate the SNR's
                     // limited to +30 dB / snr_prio_min_dB, might be still too much of reduction, let's try it?
-                    self.nr_snr_post[bindx] = (NR_X[bindx] / self.xt[bindx]).max(snr_prio_min).min(1000.0);
+                    self.nr_snr_post[bindx] = (nr_x[bindx] / self.xt[bindx]).max(snr_prio_min).min(1000.0);
                     self.nr_snr_prio[bindx] = (self.alpha * self.nr_hk_old[bindx] + (1.0 - self.alpha) * (self.nr_snr_post[bindx] - 1.0).max(0.0)).max(0.0);
                 }
 
-                VAD_low = (self.norm_locut / (self.snd_rate as f32 / FFT_FULL as f32)).floor() as usize;
-                VAD_high = (self.norm_hicut / (self.snd_rate as f32 / FFT_FULL as f32)).ceil() as usize;
+                vad_low = (self.norm_locut / (self.snd_rate as f32 / FFT_FULL as f32)).floor() as usize;
+                vad_high = (self.norm_hicut / (self.snd_rate as f32 / FFT_FULL as f32)).ceil() as usize;
         /*
                 #if 0
                     if (s->last_norm_locut != snd->norm_locut || s->last_norm_hicut != snd->norm_hicut) {
@@ -734,20 +723,20 @@ impl SpectralNoiseReduction {
                 #endif
 
             */
-                if VAD_low == VAD_high {
-                    VAD_high += 1;
+                if vad_low == vad_high {
+                    vad_high += 1;
                 }
 
-                if VAD_low < 1 {
-                    VAD_low = 1;
-                } else if VAD_low > FFT_HALF - 2 {
-                    VAD_low = FFT_HALF - 2;
+                if vad_low < 1 {
+                    vad_low = 1;
+                } else if vad_low > FFT_HALF - 2 {
+                    vad_low = FFT_HALF - 2;
                 }
 
-                if VAD_high < 2 {
-                    VAD_high = 2;
-                } else if VAD_high > FFT_HALF {
-                    VAD_high = FFT_HALF;
+                if vad_high < 2 {
+                    vad_high = 2;
+                } else if vad_high > FFT_HALF {
+                    vad_high = FFT_HALF;
                 }
             /*
                 // 4. calculate v = SNRprio(n, bin[i]) / (SNRprio(n, bin[i]) + 1) * SNRpost(n, bin[i]) (eq. 12 of Schmitt et al. 2002, eq. 9 of Romanin et al. 2009)
@@ -785,7 +774,7 @@ impl SpectralNoiseReduction {
                 // 4. calculate v = SNRprio(n, bin[i]) / (SNRprio(n, bin[i]) + 1) * SNRpost(n, bin[i]) (eq. 12 of Schmitt et al. 2002, eq. 9 of Romanin et al. 2009)
                 //    and calculate the HK's
 
-                for bindx in VAD_low..VAD_high {
+                for bindx in vad_low..vad_high {
                     //assert_array_dim!(bindx, FFT_HALF);
                     let v = self.nr_snr_prio[bindx] * self.nr_snr_post[bindx] / (1.0 + self.nr_snr_prio[bindx]);
                     let gain_limit = 0.001;
@@ -798,9 +787,9 @@ impl SpectralNoiseReduction {
                 let mut pre_power: f32 = 0.0;
                 let mut post_power: f32 = 0.0;
 
-                for bindx in VAD_low..VAD_high {
-                    pre_power += NR_X[bindx];
-                    post_power += self.nr_g[bindx] * self.nr_g[bindx] * NR_X[bindx];
+                for bindx in vad_low..vad_high {
+                    pre_power += nr_x[bindx];
+                    post_power += self.nr_g[bindx] * self.nr_g[bindx] * nr_x[bindx];
                 }
                 
                 let nn: usize;
@@ -855,7 +844,7 @@ impl SpectralNoiseReduction {
             }   // end of "if s->first_time == 3"
             */
                     
-                for bindx in VAD_low + nn / 2..VAD_high - nn / 2 {
+                for bindx in vad_low + nn / 2..vad_high - nn / 2 {
                     //assert_array_dim!(bindx, FFT_HALF);
                     self.nr_nest[bindx] = 0.0;
                     for m in bindx - nn / 2..=bindx + nn / 2 {
@@ -877,7 +866,7 @@ impl SpectralNoiseReduction {
                 }
 
                 // upper edge - only going NN steps backward and taking the average
-                for bindx in VAD_high - nn..VAD_high {
+                for bindx in vad_high - nn..vad_high {
                     //assert_array_dim!(bindx, FFT_HALF);
                     self.nr_nest[bindx] = 0.0;
                     for m in (bindx - nn + 1..bindx + 1).rev() {
@@ -888,7 +877,7 @@ impl SpectralNoiseReduction {
                 }
                 // end of edge treatment
 
-                for bindx in VAD_low + nn / 2..VAD_high - nn / 2 {
+                for bindx in vad_low + nn / 2..vad_high - nn / 2 {
                     //assert_array_dim!(bindx, FFT_HALF);
                     self.nr_g[bindx] = self.nr_nest[bindx];
                 }
