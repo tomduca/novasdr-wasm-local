@@ -943,7 +943,7 @@ impl SpectralNoiseReduction {
             // do the overlap & add
             for i in 0..FFT_HALF {
                 // take real part of first half of current iFFT result and add to 2nd half of last iFFT_result
-                buf[i + k * FFT_HALF] = (self.fft_buffer[i].re + self.last_ifft_result[i]) * self.final_gain;
+                buf[i] = (self.fft_buffer[i].re + self.last_ifft_result[i]) * self.final_gain;
             }
 
             // save 2nd half of iFFT result
