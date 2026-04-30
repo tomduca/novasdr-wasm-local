@@ -51,7 +51,6 @@ pyinstaller --name="LU2MET_NR" \
     --exclude-module=numpy.tests \
     --exclude-module=PyQt5.tests \
     --exclude-module=pytest \
-    --exclude-module=unittest \
     novasdr_gui_qt.py
 
 echo ""
