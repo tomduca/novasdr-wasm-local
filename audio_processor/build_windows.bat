@@ -10,7 +10,7 @@ REM Install PyInstaller
 pip install pyinstaller
 
 REM Find NovaSDR module location
-for /f "delims=" %%i in ('python -c "import novasdr_nr; import os; print(os.path.dirname(novasdr_nr.__file__))"') do set NOVASDR_MODULE=%%i
+for /f "delims=" %%i in ('python -c "import novasdr_nr; import os; print(os.path.dirname(novasdr_nr.__file__).replace('/', '\\'))"') do set NOVASDR_MODULE=%%i
 echo NovaSDR module found at: %NOVASDR_MODULE%
 
 REM Clean previous builds
