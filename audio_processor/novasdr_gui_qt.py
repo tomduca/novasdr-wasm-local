@@ -17,7 +17,7 @@ import logging
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
                              QTextEdit, QRadioButton, QButtonGroup, QCheckBox,
-                             QGroupBox, QMessageBox, QSlider)
+                             QGroupBox, QMessageBox, QSlider, QScrollArea)
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
@@ -363,11 +363,19 @@ class NovaSDRGUI(QMainWindow):
     def init_ui(self):
         self.setWindowTitle('LU2MET NR Filter v1.0.0-beta')
         self.setGeometry(100, 100, 600, 700)
+        self.setMinimumSize(400, 300)  # Minimum window size
         
-        # Central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        # Create scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setCentralWidget(scroll)
+        
+        # Content widget inside scroll area
+        content_widget = QWidget()
+        scroll.setWidget(content_widget)
+        layout = QVBoxLayout(content_widget)
         
         # Header
         header = QLabel('📻 LU2MET NR Filter')
