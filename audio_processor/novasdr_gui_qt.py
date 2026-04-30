@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
                              QTextEdit, QRadioButton, QButtonGroup, QCheckBox,
                              QGroupBox, QMessageBox, QSlider, QScrollArea)
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer, QSettings
 from PyQt5.QtGui import QFont, QPalette, QColor
 
 # Setup logging to file for debugging when run from Finder
@@ -355,10 +355,12 @@ class AudioProcessor(QThread):
 class NovaSDRGUI(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.settings = QSettings('LU2MET', 'NovaSDR_NR_Filter')
         self.processor = AudioProcessor()
         self.processor.log_signal.connect(self.add_log)
         self.init_ui()
         self.load_devices()
+        self.load_settings()
         
     def init_ui(self):
         self.setWindowTitle('LU2MET NR Filter v1.0.0-beta')
@@ -733,7 +735,91 @@ class NovaSDRGUI(QMainWindow):
         timestamp = time.strftime("%H:%M:%S")
         self.log_text.append(f"[{timestamp}] {message}")
     
+    def load_settings(self):
+        """Load saved settings from QSettings"""
+        try:
+            # Load mode (SSB/CW)
+            mode = self.settings.value('mode', 'SSB')
+            if mode == 'CW':
+                self.cw_radio.setChecked(True)
+            else:
+                self.ssb_radio.setChecked(True)
+            
+            # Load preset
+            preset = self.settings.value('preset', 'extreme')
+            for button in self.preset_group.buttons():
+                button_text = button.text().lower().replace(' ⭐', '')
+                if button_text == preset:
+                    button.setChecked(True)
+                    break
+            
+            # Load input gain
+            input_gain = int(self.settings.value('audio/input_gain', 5))
+            self.gain_slider.setValue(input_gain)
+            
+            # Load output volume
+            output_volume = int(self.settings.value('audio/output_volume', 100))
+            self.volume_slider.setValue(output_volume)
+            
+            # Load bypass state
+            bypass = self.settings.value('audio/bypass', False, type=bool)
+            self.bypass_check.setChecked(bypass)
+            
+            # Load input/output devices (by name)
+            input_device = self.settings.value('audio/input_device', '')
+            output_device = self.settings.value('audio/output_device', '')
+            
+            if input_device:
+                index = self.input_combo.findText(input_device)
+                if index >= 0:
+                    self.input_combo.setCurrentIndex(index)
+            
+            if output_device:
+                index = self.output_combo.findText(output_device)
+                if index >= 0:
+                    self.output_combo.setCurrentIndex(index)
+            
+            self.add_log('✓ Settings loaded')
+        except Exception as e:
+            self.add_log(f'⚠️ Could not load settings: {e}')
+    
+    def save_settings(self):
+        """Save current settings to QSettings"""
+        try:
+            # Save input/output devices
+            self.settings.setValue('audio/input_device', self.input_combo.currentText())
+            self.settings.setValue('audio/output_device', self.output_combo.currentText())
+            
+            # Save mode
+            mode = 'CW' if self.cw_radio.isChecked() else 'SSB'
+            self.settings.setValue('mode', mode)
+            
+            # Save preset
+            for button in self.preset_group.buttons():
+                if button.isChecked():
+                    preset = button.text().lower().replace(' ⭐', '')
+                    self.settings.setValue('preset', preset)
+                    break
+            
+            # Save input gain
+            self.settings.setValue('audio/input_gain', self.gain_slider.value())
+            
+            # Save output volume
+            self.settings.setValue('audio/output_volume', self.volume_slider.value())
+            
+            # Save bypass state
+            self.settings.setValue('audio/bypass', self.bypass_check.isChecked())
+            
+            # Sync to disk
+            self.settings.sync()
+            
+            self.add_log('✓ Settings saved')
+        except Exception as e:
+            self.add_log(f'⚠️ Could not save settings: {e}')
+    
     def closeEvent(self, event):
+        """Override close event to save settings before exit"""
+        self.save_settings()
         if self.processor.running:
             self.processor.stop_processing()
         event.accept()
