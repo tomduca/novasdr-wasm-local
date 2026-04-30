@@ -158,15 +158,31 @@ El ejecutable estará en: `audio_processor\dist\LU2MET_NR.exe`
 
 ### Error: "No module named 'novasdr_nr'"
 
-**Solución:**
-```bash
-# Recompilar el módulo Rust
-cd novasdr_nr_py
-source ../audio_processor/venv/bin/activate  # macOS
-# o
-..\audio_processor\venv\Scripts\Activate.ps1  # Windows
+**Causa:** El módulo Rust no está compilado o no está en el virtual environment.
 
+**Solución Windows:**
+```powershell
+cd novasdr_nr_py
+..\audio_processor\venv\Scripts\Activate.ps1
 maturin develop --release
+```
+
+**Solución macOS:**
+```bash
+cd novasdr_nr_py
+source ../audio_processor/venv/bin/activate
+maturin develop --release
+```
+
+**Verificar que se instaló:**
+```powershell
+# Windows
+cd ..\audio_processor
+python -c "import novasdr_nr; print('OK:', novasdr_nr.__file__)"
+
+# macOS
+cd ../audio_processor
+python3 -c "import novasdr_nr; print('OK:', novasdr_nr.__file__)"
 ```
 
 ### Error: PyInstaller no encuentra el módulo .so/.pyd
