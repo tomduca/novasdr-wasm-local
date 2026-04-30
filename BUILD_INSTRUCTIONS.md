@@ -121,9 +121,19 @@ pip install PyQt5 sounddevice scipy pydub numpy maturin pyinstaller
 
 ### 4. Compilar Módulo Rust (NovaSDR)
 
+**IMPORTANTE:** El venv DEBE estar activado antes de ejecutar maturin.
+
 ```powershell
 cd ..\novasdr_nr_py
+# Asegurarse que el venv está activado (deberías ver (venv) en el prompt)
 ..\audio_processor\venv\Scripts\Activate.ps1
+maturin develop --release
+```
+
+**Si usás CMD en vez de PowerShell:**
+```cmd
+cd ..\novasdr_nr_py
+..\audio_processor\venv\Scripts\activate.bat
 maturin develop --release
 ```
 

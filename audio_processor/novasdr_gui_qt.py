@@ -268,7 +268,7 @@ class AudioProcessor(QThread):
             preset_config = presets[self.preset]
             self.novasdr_nr = novasdr_nr_py.SpectralNoiseReduction(
                 SAMPLE_RATE,
-                preset_config['gain'],
+                1.0,  # Set Rust gain to 1.0 - Python handles gain with post_gain
                 preset_config['alpha'],
                 preset_config['asnr']
             )
@@ -285,7 +285,7 @@ class AudioProcessor(QThread):
             preset_config = presets[preset]
             self.novasdr_nr = novasdr_nr_py.SpectralNoiseReduction(
                 SAMPLE_RATE,
-                preset_config['gain'],
+                1.0,  # Set Rust gain to 1.0 - Python handles gain with post_gain
                 preset_config['alpha'],
                 preset_config['asnr']
             )
